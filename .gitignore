@@ -9,4 +9,5 @@
 /.zed
 /node_modules
 /dist
+/server/logs/*.log
 Thumbs.db
