@@ -9,8 +9,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "jsxbin": "^2.3.0"
-  }
+  "type": "commonjs"
 }
