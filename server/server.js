@@ -10,6 +10,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dataDir = path.join(__dirname, 'data');
 const licensesFile = path.join(dataDir, 'licenses.json');
+const projectRoot = path.resolve(__dirname, '..');
+const distDir = path.join(projectRoot, 'dist');
+const publicDir = path.join(projectRoot, 'public');
+const frontendEntry = path.join(distDir, 'index.html');
 const defaultPort = Number.parseInt(process.env.PORT ?? '3000', 10) || 3000;
 let mutationQueue = Promise.resolve();
 
@@ -51,6 +55,48 @@ export function createApp(secretKey = resolveSecret()) {
             lastSync: request.body.last_sync,
             secret: secretKey,
         }));
+    }));
+
+    app.use(express.static(publicDir, {
+        extensions: ['html'],
+        index: false,
+    }));
+    app.use(express.static(distDir, {
+        extensions: ['html'],
+        index: false,
+    }));
+
+    app.use(asyncHandler(async (request, response, next) => {
+        if (request.path.startsWith('/api/')) {
+            next();
+            return;
+        }
+
+        if (await fileExists(frontendEntry)) {
+            response.sendFile(frontendEntry);
+            return;
+        }
+
+        response.type('html').send(`<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>TextShift Licensing API</title>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 40px; background: #f8fafc; color: #0f172a; }
+            main { max-width: 720px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08); }
+            code { background: #e2e8f0; padding: 2px 6px; border-radius: 6px; }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>TextShift Licensing API</h1>
+            <p>The backend is running.</p>
+            <p>Build the frontend with <code>npm run build</code> to serve the Vite app from this process.</p>
+        </main>
+    </body>
+</html>`);
     }));
 
     app.use((error, _request, response, next) => {
@@ -378,6 +424,15 @@ function resolveSecret(secret = process.env.SECRET) {
     }
 
     return normalizedSecret;
+}
+
+async function fileExists(filePath) {
+    try {
+        await fs.access(filePath);
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 function isDirectExecution() {
